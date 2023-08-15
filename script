@@ -1,0 +1,135 @@
+#!/bin/bash
+
+# Detect the Linux distribution
+if [ -f /etc/os-release ]; then
+    source /etc/os-release
+    distro_name=$NAME
+else
+    echo "Unable to detect the Linux distribution."
+    exit 1
+fi
+
+# Function to display distribution-specific update command
+update_packages() {
+    case "$distro_name" in
+        Ubuntu|Debian)
+            sudo apt update
+            sudo apt upgrade -y
+            ;;
+        Fedora)
+            sudo dnf update -y
+            ;;
+        *)
+            echo "Unsupported distribution: $distro_name"
+            ;;
+    esac
+}
+
+# Function to restart distribution-specific network services
+restart_network() {
+    case "$distro_name" in
+        Ubuntu|Debian)
+            sudo systemctl restart network
+            ;;
+        Fedora)
+            sudo systemctl restart NetworkManager
+            ;;
+        *)
+            echo "Unsupported distribution: $distro_name"
+            ;;
+    esac
+}
+
+# Display a menu of troubleshooting options
+echo "Select an option:"
+echo "1. Check System Information"
+echo "2. Update Packages"
+echo "3. Check Disk Space"
+echo "4. Restart Network Services"
+echo "5. Clear Temporary Files"
+echo "6. Check for Malware"
+echo "7. Run Memory Test"
+echo "8. Generate System Report"
+echo "9. Exit"
+
+read -p "Enter your choice: " choice
+
+case $choice in
+    1)
+        # Display system information
+        echo "System Information:"
+        uname -a
+        ;;
+    2)
+        # Update package repositories and upgrade packages
+        echo "Updating packages..."
+        update_packages
+        ;;
+    3)
+        # Check disk space
+        echo "Disk Space:"
+        df -h
+        ;;
+    4)
+        # Restart network services
+        echo "Restarting network services..."
+        restart_network
+        ;;
+    5)
+        # Clear temporary files
+        echo "Clearing temporary files..."
+        case "$distro_name" in
+            Ubuntu|Debian)
+                sudo apt autoclean
+                sudo apt autoremove -y
+                ;;
+            Fedora)
+                sudo dnf clean all
+                ;;
+            *)
+                echo "Unsupported distribution: $distro_name"
+                ;;
+        esac
+        ;;
+    6)
+        # Check for malware with ClamAV
+        echo "Scanning for malware..."
+        case "$distro_name" in
+            Ubuntu|Debian)
+                sudo apt install clamav -y
+                sudo freshclam
+                sudo clamscan -r /
+                ;;
+            Fedora)
+                sudo dnf install clamav -y
+                sudo freshclam
+                sudo clamscan -r /
+                ;;
+            *)
+                echo "Unsupported distribution: $distro_name"
+                ;;
+        esac
+        ;;
+    7)
+        # Run memory test
+        echo "Running memory test..."
+        sudo memtest86
+        ;;
+    8)
+        # Generate system report
+        echo "Generating system report..."
+        mkdir -p ~/system_report
+        lshw > ~/system_report/hardware_info.txt
+        lsblk > ~/system_report/block_devices.txt
+        lspci > ~/system_report/pci_devices.txt
+        dmesg > ~/system_report/kernel_log.txt
+        echo "System report generated in ~/system_report"
+        ;;
+    9)
+        echo "Exiting..."
+        exit 0
+        ;;
+    *)
+        echo "Invalid option"
+        ;;
+esac
